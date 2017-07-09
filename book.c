@@ -1,52 +1,17 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "book.h"
 
 #include "type_define.h"
 #include "value_define.h"
-
-#define PRIVATE static
-
-#define R_FALSE_RET(condition, value)\
-    if(!(conditoin))\
-    {\
-        return value;\
-    }
-
-#define R_ASSERT(condition, value, fmt, arg...)\
-    if(!(condition))\
-    {\
-        printf("ASSERT! "#condition"\n");\
-        printf(fmt,##arg);\
-        return value;\
-    }
-
-#define R_ASSERT_DO(condition, value, action, fmt, arg...)\
-    if(!(condition))\
-    {\
-        printf("ASSERT! "#condition"\n");\
-        printf(fmt,##arg);\
-        action;\
-        return value;\
-    }
-
-#define SUCCESS (0)
-#define ERROR (-1)
-#define TRUE (true)
-#define FALSE (false)
+#include "utils_define.h"
 
 #define MAX_NUM_OF_BOOKS 256
 
-typedef int          INT;
-typedef unsigned int UINT;
-typedef char*        PSTR;
-typedef bool         BOOL;
-typedef INT          ERR_CODE;
 
-#define INVALID_UINT (~(UINT)0)
-
-typedef book_tag struct
+typedef struct book_tag
 {
     BOOL isIdle;
     PSTR pName;
@@ -54,11 +19,13 @@ typedef book_tag struct
     UINT price;
 } book;
 
-typedef books_tag struct
+typedef struct books_tag
 {
-    UNIT number;
-    book array[MAX_NUM_BOOKS];
-}books;
+    UINT number;
+    book array[MAX_NUM_OF_BOOKS];
+}book_list;
+
+book_list books;
 
 PRIVATE void init_abook(book *pbook)
 {
@@ -69,22 +36,43 @@ PRIVATE void init_abook(book *pbook)
     pbook->price = INVALID_UINT;
 }
 
-void book_init(void)
+void init_books(void)
 {
     books.number=0;
     
-    for(UINT i = 0; i < MAX_NUM_BOOKS; i++)
+    for(UINT i = 0; i < MAX_NUM_OF_BOOKS; i++)
     {
         init_abook(&(books.array[i]));
     }
 }
 
+PRIVATE void print_abook(book *pBook)
+{
+    printf("    name: %s, iSBN: %s, price: %u.\n", pBook->pName, pBook->pISBN, pBook->price);
+}
+
 void print_books(void)
 {
-    for (int i = 0; i < book.number; i++)
+    for (int i = 0; i < books.number; i++)
     {
+        if (books.array[i].isIdle == TRUE)
+        {
+            continue;
+        }
+
         print_abook(&(books.array[i]));
     }
+}
+
+PRIVATE UINT find_idlebook(void)
+{
+    for (UINT i = 0; i < MAX_NUM_OF_BOOKS; i++)
+    {
+        if ( books.array[i].isIdle == TRUE)
+        return i;
+    }
+
+    return INVALID_UINT;
 }
 
 PRIVATE ERR_CODE set_abook(book *pBook, PSTR pName, PSTR pISBN, UINT price)
@@ -98,7 +86,7 @@ PRIVATE ERR_CODE set_abook(book *pBook, PSTR pName, PSTR pISBN, UINT price)
     strcpy(pBook->pName, pName);
 
     pBook->pISBN = malloc(strlen(pISBN)+1);
-    R_ASSERT_DO(pBook-pISBN != NULL, ERROR, free(pBook-pName));
+    R_ASSERT_DO(pBook->pISBN != NULL, ERROR, free(pBook->pName));
     strcpy(pBook->pISBN, pISBN);
 
     pBook->price = price;
@@ -110,15 +98,16 @@ ERR_CODE insert_abook(PSTR pName, PSTR pISBN, UINT price)
 {
     R_FALSE_RET(pName != NULL && pISBN != NULL, ERROR);
 
-    R-FALSE_RET(books.number >= MAX_NUM_BOOKS, ERROR);
+    R_FALSE_RET(books.number < MAX_NUM_OF_BOOKS, ERROR);
 
-    books.number++;
     UINT index = find_idlebook();
-    R_ASSERT(index < MAX_NUM_BOOKS, ERROR, "index = %u.\n", index);
+    R_ASSERT(index < MAX_NUM_OF_BOOKS, ERROR);
 
-    ERR_CODE ret = set_abook(&(books.array[index]), PSTR pName, PSTR pISBN, price);
+    ERR_CODE ret = set_abook(&(books.array[index]), pName, pISBN, price);
     
     R_ASSERT(ret == SUCCESS, ERROR);
+
+    books.number++;
 
     return SUCCESS;
 }
